@@ -4,6 +4,10 @@ import os
 import duckdb
 import yfinance as yf
 import pandas as pd
+from yfinance import data
+
+# === Schema Module ===
+from .schema import StockDataSchema
 
 # === Valid Interval ===
 VALID_INTERVALS: List[str] = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"]
@@ -73,6 +77,9 @@ class Fetcher:
 
         self._init_db()
 
+        ## === Determine the number of threads to use for parallel processing ===
+        self.n_threads = min(4, os.cpu_count() / 2)
+
     def _init_db(self) -> None:
         """
         Initialize the database connection and create necessary tables if they don't exist.
@@ -127,3 +134,64 @@ class Fetcher:
 
         except Exception as e:  
             print(f"Error creating table: {e}")
+
+    def fetch_data(
+            self
+    ) -> StockDataSchema:
+        """
+        Fetch historical stock data for the specified tickers and parameters.
+        Returns:
+            StockDataSchema: A DataFrame containing the fetched stock data.
+        """
+        try:
+            ## === Fetch the stock data ===
+
+            ### === Use the appropriate method based on whether start/end dates or period is specified ===
+            if self.start_date and self.end_date:
+                data = yf.download(
+                    tickers = self.tickers,
+                    start = self.start_date,
+                    end = self.end_date,
+                    interval = self.interval,
+                    auto_adjust = True,
+                    threads = self.n_threads
+                )
+            else:
+                data = yf.download(
+                    tickers = self.tickers,
+                    period = self.period,
+                    interval = self.interval,
+                    auto_adjust = True,
+                    threads = self.n_threads
+                )
+
+            ## === If no data is fetched ===
+            if data.empty:
+                print("No data fetched. Please check the tickers and parameters.")
+                return pd.DataFrame(
+                    columns = ["Date", "Ticker", "Close", "High", "Low", "Open", "Volume"]
+                )
+
+            ## === Reshape the DataFrame into a long-form format ===
+            data_stacked = data.stack(level = "Ticker").reset_index()
+
+            ## === Sort the DataFrame by Ticker and Date ===
+            data_stacked = data_stacked.sort_values(
+                by = ["Ticker", "Date"]
+            ).reset_index(drop = True)
+
+            ## === Nuke the lingering axis names (like "Price") ===
+            data_stacked.rename_axis(
+                None,
+                axis = 1,
+                inplace = True
+            )
+            data_stacked.index.name = None
+
+            return data_stacked
+
+        except Exception as e: 
+            print(f"Error fetching data: {e}")
+            return pd.DataFrame(
+                columns = ["Date", "Ticker", "Close", "High", "Low", "Open", "Volume"]
+            )
