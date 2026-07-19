@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "market-ingest"
+version = "0.1.0"
+description = "High-performance market data ingestion pipeline storing historical and real-time data in DuckDB."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "AGPL-3.0"
+authors = [
+    {name = "Rahul Rawat"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+# === Core dependencies required to run the pipeline ===
+dependencies = [
+    "yfinance>=0.2.40",
+    "duckdb>=1.0.0",
+    "pandas>=2.0.0",
+    "pyyaml>=6.0.1",
+]
+
+# === Optional dependencies for testing ===
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
