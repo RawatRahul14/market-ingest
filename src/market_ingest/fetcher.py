@@ -4,7 +4,7 @@ import os
 import duckdb
 import yfinance as yf
 import pandas as pd
-from yfinance import data
+import time
 
 # === Schema Module ===
 from .schema import StockDataSchema
@@ -59,7 +59,7 @@ class Fetcher:
             if end_date is not None:
                 self.end_date = end_date
             else:
-                self.end_date = pd.Timestamp.now().strftime("%Y-%m-%d")
+                self.end_date = time.strftime("%Y-%m-%d")
 
         else:
             self.start_date = None
