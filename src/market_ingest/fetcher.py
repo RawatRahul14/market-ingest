@@ -49,6 +49,9 @@ class Fetcher:
         ## === Store the parameters as instance variables ===
         self.tickers = [tickers] if isinstance(tickers, str) else tickers
 
+        ## === Adding '.NS' at the end of each ticker if not present ===
+        self.tickers = [ticker if ticker.endswith(".NS") else f"{ticker}.NS" for ticker in self.tickers]
+
         if start_date is not None:
             self.period = None
             self.start_date = start_date
@@ -71,7 +74,7 @@ class Fetcher:
 
         ## === Database Path and Initialization ===
         if db_path is None:
-            self.db_path = "data/market_data.db"
+            self.db_path = f"data/{interval}/market_data.db"
         else:
             self.db_path = db_path
 
@@ -115,10 +118,10 @@ class Fetcher:
                     CREATE TABLE IF NOT EXISTS market_data (
                         Date TIMESTAMP,
                         Ticker VARCHAR,
-                        Close FLOAT,
-                        High FLOAT,
-                        Low FLOAT,
-                        Open FLOAT,
+                        Close DOUBLE,
+                        High DOUBLE,
+                        Low DOUBLE,
+                        Open DOUBLE,
                         Volume BIGINT,
                         PRIMARY KEY (Date, Ticker)
                     )
@@ -188,6 +191,10 @@ class Fetcher:
             )
             data_stacked.index.name = None
 
+            ## === Round the numeric columns to a reasonable number of decimal places ===
+            numeric_columns = ["Close", "High", "Low", "Open"]
+            data_stacked[numeric_columns] = data_stacked[numeric_columns].round(2)
+
             return data_stacked
 
         except Exception as e: 
@@ -195,3 +202,33 @@ class Fetcher:
             return pd.DataFrame(
                 columns = ["Date", "Ticker", "Close", "High", "Low", "Open", "Volume"]
             )
+
+    def store_data(
+            self,
+            data: StockDataSchema
+    ) -> None:
+        """
+        Store the fetched stock data into the database.
+        Args:
+            data (StockDataSchema): A DataFrame containing the stock data to be stored.
+        """
+        ## === Store the data into the database ===
+        try:
+            with duckdb.connect(self.db_path) as conn:
+                conn.execute(
+                    """
+                    INSERT INTO market_data (Date, Ticker, Close, High, Low, Open, Volume)
+                    SELECT
+                        Date, Ticker, Close, High, Low, Open, Volume
+                    FROM data
+                    ON CONFLICT (Date, Ticker) DO UPDATE SET
+                        Close = EXCLUDED.Close,
+                        High = EXCLUDED.High,
+                        Low = EXCLUDED.Low,
+                        Open = EXCLUDED.Open,
+                        Volume = EXCLUDED.Volume
+                    """
+                )
+
+        except Exception as e:
+            print(f"Error storing data: {e}")
