@@ -59,7 +59,7 @@ class Fetcher:
             if end_date is not None:
                 self.end_date = end_date
             else:
-                self.end_date = time.strftime("%Y-%m-%d")
+                self.end_date = None
 
         else:
             self.start_date = None

@@ -60,8 +60,6 @@ class DataIngestPipeline:
                 ### === If End Date is Not Provided, Use Current Date ===
                 if end_date is not None:
                     self.end_date = end_date
-                else:
-                    self.end_date = time.strftime("%Y-%m-%d")
 
         ## === If Start Date is Provided ===
         else:
@@ -70,8 +68,6 @@ class DataIngestPipeline:
             ### === If End Date is Not Provided, Use Current Date ===
             if end_date is not None:
                 self.end_date = end_date
-            else:
-                self.end_date = time.strftime("%Y-%m-%d")
 
     def main(
             self
