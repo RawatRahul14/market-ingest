@@ -81,7 +81,8 @@ class Fetcher:
         self._init_db()
 
         ## === Determine the number of threads to use for parallel processing ===
-        self.n_threads = min(4, os.cpu_count() / 2)
+        cpus = os.cpu_count() or 2
+        self.n_threads = max(1, int(min(4, cpus // 2)))
 
     def _init_db(self) -> None:
         """

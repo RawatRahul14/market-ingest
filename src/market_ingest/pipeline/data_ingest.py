@@ -84,7 +84,7 @@ class DataIngestPipeline:
         try:
 
             ### === Validate Date Range ===
-            if self.start_date == self.end_date:
+            if (self.start_date == self.end_date) and self.start_date is not None:
                 print(f"Start date and end date are both {self.start_date}. Could not download new data. Ending pipeline.")
                 return
             

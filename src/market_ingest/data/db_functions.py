@@ -31,7 +31,8 @@ def call_db_data(
         pd.DataFrame: Query result as a Pandas DataFrame.
     """
     ## === File Path ===
-    file_path = f"data/{interval}/market_data.db"
+    if file_path is None:
+        file_path = f"data/{interval}/market_data.db"
 
     ## === Normalise Tickers ===
     tickers = [tickers] if isinstance(tickers, str) else tickers
@@ -51,8 +52,11 @@ def call_db_data(
     order_clause = "ORDER BY Date DESC" if desc is True else "ORDER BY Date ASC"
 
     ## === Limit ===
-    limit = limit * len(tickers_tuple)
-    limit_clause = f"LIMIT {int(limit)}" if limit is not None else ""
+    if limit is not None:
+        calc_limit = limit * len(tickers_list)
+        limit_clause = f"LIMIT {calc_limit}"
+    else:
+        limit_clause = ""
 
     ## === Building Query ===
     query = f"""
