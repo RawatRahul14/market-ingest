@@ -73,3 +73,32 @@ def call_db_data(
 
     except Exception as e:
         raise ValueError("Could not call data from duckdb database: {e}.")
+
+def map_by_ticker(
+        data: pd.DataFrame,
+        ticker_column_name: str = "Ticker"
+) -> Dict[str, pd.DataFrame]:
+    """
+    Splits a long-form market DataFrame into a dictionary of DataFrames keyed by Ticker.
+
+    Args:
+        - data (pd.DataFrame): Master DataFrame containing historical data for all the tickers.
+        - ticker_column_name (str): Name of the column containing the names of the tickers.
+
+    returns:
+        Dict[str, pd.DataFrame]: Mapping of ticker symbol to its respective DataFrame.
+    """
+    if data.empty:
+        raise ValueError("Provided DataFrame is empty. Cannot split empty data.")
+
+    if ticker_column_name not in data.columns:
+        raise ValueError(f"Column '{ticker_column_name}' not found in DataFrame. Available columns are: {list(data.columns)}")
+
+    try:
+        return {
+            ticker: group.drop(columns = [ticker_column_name]).reset_index(drop = True)
+            for ticker, group in data.groupby(ticker_column_name)
+        }
+
+    except Exception as e:
+        raise ValueError(f"Failed to partition DataFrame by column '{ticker_column_name}': {e}")

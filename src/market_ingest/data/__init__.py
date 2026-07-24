@@ -1,5 +1,6 @@
-from .db_functions import call_db_data
+from .db_functions import call_db_data, map_by_ticker
 
 __all__ = [
-    "call_db_data"
+    "call_db_data",
+    "map_by_ticker"
 ]
