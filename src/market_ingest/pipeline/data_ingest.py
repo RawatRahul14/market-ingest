@@ -6,7 +6,7 @@ from typing import List, Literal, Optional
 from market_ingest.fetcher import Fetcher
 
 # === Utils ===
-from market_ingest.utils import update_metadata, call_metadata
+from market_ingest.utils import update_metadata, call_metadata, get_logger
 
 # === Data Ingest Pipeline ===
 class DataIngestPipeline:
@@ -30,6 +30,11 @@ class DataIngestPipeline:
             period (Literal): The data period. Defaults to None.
             db_path (Optional[str]): The path to the database file. Defaults to None.
         """
+        ## === Logger ===
+        self.logger = get_logger(
+            name = "PIPELINE"
+        )
+
         ## === Store Base Parameters ===
         self.tickers = tickers
         self.interval = interval
@@ -81,6 +86,9 @@ class DataIngestPipeline:
         Returns:
             None
         """
+        ## === Starting Pipeline Logger ===
+        self.logger.info("="*50)
+        self.logger.info(">>>>>>>> Starting DataIngestPipeline <<<<<<<<")
         try:
 
             ### === Validate Date Range ===
@@ -106,5 +114,9 @@ class DataIngestPipeline:
             ## === Update Metadata After Successful Data Ingestion ===
             update_metadata(today_date = self.end_date if self.end_date is not None else None)
 
+            ## === End Pipeline Logger ===
+            self.logger.info(">>>>>>>> Completed DataIngestPipeline <<<<<<<<")
+            self.logger.info("%s\n\n", "=" * 50)
+
         except Exception as e:
-            raise ValueError(f"An error occurred during the data ingestion process: {e}")
+            self.logger.exception(f"An error occurred during the data ingestion process: {e}")

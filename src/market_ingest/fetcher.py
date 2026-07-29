@@ -15,6 +15,9 @@ VALID_INTERVALS: List[str] = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h"
 # === Valid Period ===
 VALID_PERIODS: List[str] = ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
 
+# === Utils ===
+from market_ingest.utils import get_logger
+
 # ==============================================================================
 # Fetcher Class
 # ==============================================================================
@@ -35,16 +38,23 @@ class Fetcher:
         """
         Initialize the Fetcher class with the specified parameters.
         """
+        ## === Initiating the Logger ===
+        self.logger = get_logger(
+            "FETCHER"
+        )
 
         ## === Validate the input parameters ===
         if (start_date or end_date) and period:
-            raise ValueError("Cannot specify both start/end dates and period. Please choose one.")
+            self.logger.error("Cannot specify both start/end dates and period. Please choose one.")
+            raise
 
         if interval not in VALID_INTERVALS:
-            raise ValueError(f"Invalid interval '{interval}'. Valid intervals are: {VALID_INTERVALS}")
+            self.logger.error(f"Invalid interval '{interval}'. Valid intervals are: {VALID_INTERVALS}")
+            raise
 
         if (period not in VALID_PERIODS) and period is not None:
-            raise ValueError(f"Invalid period '{period}'. Valid periods are: {VALID_PERIODS}")
+            self.logger.error(f"Invalid period '{period}'. Valid periods are: {VALID_PERIODS}")
+            raise
 
         ## === Store the parameters as instance variables ===
         self.tickers = [tickers] if isinstance(tickers, str) else tickers
@@ -93,7 +103,7 @@ class Fetcher:
             if os.path.exists(self.db_path):
 
                 ## === Database already exists, no need to create ===
-                print(f"Database already exists at {self.db_path}.")
+                self.logger.info(f"Database already exists at {self.db_path}.")
             else:
 
                 ## === Create the directory if it doesn't exist ===
@@ -104,10 +114,11 @@ class Fetcher:
                         dir_name,
                         exist_ok = True
                     )
-                print(f"Database initialized at {self.db_path}.")
+                self.logger.info(f"Database initialized at {self.db_path}.")
 
         except Exception as e:
-            print(f"Error initializing database: {e}")
+            self.logger.exception(f"Error initializing database: {e}")
+            raise
 
         try:
             ## === Create the database connection ===
@@ -137,7 +148,8 @@ class Fetcher:
                 )
 
         except Exception as e:  
-            print(f"Error creating table: {e}")
+            self.logger.exception(f"Error creating table: {e}")
+            raise
 
     def fetch_data(
             self
@@ -147,6 +159,10 @@ class Fetcher:
         Returns:
             StockDataSchema: A DataFrame containing the fetched stock data.
         """
+
+        ## === Start Timer ===
+        start_time = time.perf_counter()
+
         try:
             ## === Fetch the stock data ===
 
@@ -171,7 +187,7 @@ class Fetcher:
 
             ## === If no data is fetched ===
             if data.empty:
-                print("No data fetched. Please check the tickers and parameters.")
+                self.logger.info("No data fetched. Please check the tickers and parameters.")
                 return pd.DataFrame(
                     columns = ["Date", "Ticker", "Close", "High", "Low", "Open", "Volume"]
                 )
@@ -196,10 +212,15 @@ class Fetcher:
             numeric_columns = ["Close", "High", "Low", "Open"]
             data_stacked[numeric_columns] = data_stacked[numeric_columns].round(2)
 
+            ## === End Timer ===
+            end_time = time.perf_counter()
+
+            self.logger.info(f"Successfully downloaded all the tickers: {', '.join(self.tickers)} for timeframe: {self.interval}, Time taken = {end_time - start_time}.")
+
             return data_stacked
 
         except Exception as e: 
-            print(f"Error fetching data: {e}")
+            self.logger.exception(f"Error fetching data: {e}")
             return pd.DataFrame(
                 columns = ["Date", "Ticker", "Close", "High", "Low", "Open", "Volume"]
             )
@@ -213,6 +234,9 @@ class Fetcher:
         Args:
             data (StockDataSchema): A DataFrame containing the stock data to be stored.
         """
+        ## === Start Time ===
+        start_time = time.perf_counter()
+
         ## === Store the data into the database ===
         try:
             with duckdb.connect(self.db_path) as conn:
@@ -231,5 +255,10 @@ class Fetcher:
                     """
                 )
 
+            ## === End Timer ===
+            end_time = time.perf_counter()
+
+            self.logger.info(f"Successfully saved data in the duckdb database, Time Taken = {end_time - start_time}")
+
         except Exception as e:
-            print(f"Error storing data: {e}")
+            self.logger.exception(f"Error storing data: {e}")
