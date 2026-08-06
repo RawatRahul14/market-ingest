@@ -50,7 +50,7 @@ class DataIngestPipeline:
             metadata_dict = call_metadata()
 
             ### === If Metadata File Does Not Exist or Last Update Date is None ===
-            if metadata_dict.get("last_update_date") is None:
+            if metadata_dict.get(self.interval, {}).get("last_update_date") is None:
 
                 ### === If Period is Not Provided, Use Default 3mo ===
                 if period is None:
@@ -60,7 +60,7 @@ class DataIngestPipeline:
 
             ### === If Metadata File Exists ===
             else:
-                self.start_date = metadata_dict.get("last_update_date")
+                self.start_date = metadata_dict.get(self.interval, {}).get("last_update_date")
 
                 ### === If End Date is Not Provided, Use Current Date ===
                 if end_date is not None:
@@ -112,7 +112,10 @@ class DataIngestPipeline:
             )
 
             ## === Update Metadata After Successful Data Ingestion ===
-            update_metadata(today_date = self.end_date if self.end_date is not None else None)
+            update_metadata(
+                time_frame = self.interval,
+                today_date = self.end_date if self.end_date is not None else None
+            )
 
             ## === End Pipeline Logger ===
             self.logger.info(">>>>>>>> Completed DataIngestPipeline <<<<<<<<")

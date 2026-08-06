@@ -9,6 +9,7 @@ from logging.handlers import RotatingFileHandler
 
 # === Metadata Update ===
 def update_metadata(
+        time_frame: str,
         today_date: str | None = None,
         file_path: str = "config/metadata.json"
 ) -> None:
@@ -16,13 +17,17 @@ def update_metadata(
     Updates the metadata JSON file with the provided date.
 
     Args:
+        time_frame (str): The time frame for which to update metadata.
         today_date (str | None): The date to include in the metadata. If None, the current date will be used.
+        file_path (str): The path to the metadata JSON file.
     """
     try:
 
         ## === Metadata to be saved ===
         metadata = {
-            "last_update_date": today_date if today_date else time.strftime("%Y-%m-%d"),
+            time_frame: {
+                "last_update_date": today_date if today_date else time.strftime("%Y-%m-%d"),
+            }
         }
 
         ## === Ensure Directory Exists ===
